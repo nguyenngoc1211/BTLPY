@@ -1,0 +1,80 @@
+{
+  "name": "APT Demo (Compose) - Webhook -> Score -> Respond",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "apt-ingest",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://scoring:8000/score",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ JSON.stringify($json.body) }}"
+      },
+      "id": "Score",
+      "name": "Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "Respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        820,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "demo-compose"
+}
+

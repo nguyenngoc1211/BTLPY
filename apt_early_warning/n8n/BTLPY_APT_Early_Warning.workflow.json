@@ -1,0 +1,222 @@
+[
+  {
+    "name": "BTLPY_APT_Early_Warning",
+    "active": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "apt-ingest",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          -32
+        ],
+        "id": "457d2d0c-adcb-4027-b5c7-c918a85f1cfb",
+        "name": "Webhook"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://host.docker.internal:8000/score",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{JSON.stringify($json.body)}}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          240,
+          -32
+        ],
+        "id": "12b71358-0fd8-440f-b780-569ed32edb60",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "4d6e6a64-14a5-4b50-99b6-86cc3ddc3d75",
+                "leftValue": "={{$json.decision}}",
+                "rightValue": "ALERT",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          480,
+          -32
+        ],
+        "id": "c2c3922b-c8ca-4c67-952f-48a1e9a57929",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "value": "models/gemini-2.5-flash",
+            "mode": "list",
+            "cachedResultName": "models/gemini-2.5-flash"
+          },
+          "messages": {
+            "values": [
+              {
+                "content": "=Bạn là SOC analyst. Viết cảnh báo Telegram ngắn gọn bằng tiếng Việt từ JSON sau.\n- Nêu: stage, confidence, severity, src/dst, và 3 hành động đề xuất.\nChỉ trả về JSON hợp lệ, không kèm chữ khác. Trả về đúng dạng:\n{\n  \"title\": \"...\",\n  \"message\": \"...\",\n  \"actions\": [\"...\", \"...\", \"...\"]\n}\n\nJSON đầu vào:\n{{ JSON.stringify($node[\"HTTP Request\"].json, null, 2) }}"
+              }
+            ]
+          },
+          "jsonOutput": true,
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.googleGemini",
+        "typeVersion": 1.1,
+        "position": [
+          704,
+          -32
+        ],
+        "id": "dff15f1e-596b-44fb-9bc0-d75e50f5b94e",
+        "name": "Message a model"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const data = $input.item.json;\n\n// Gemini node often returns the model output as a JSON string in:\n//   data.content.parts[0].text\nconst text = data?.content?.parts?.[0]?.text ?? data?.text ?? '';\n\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  parsed = {\n    title: 'UNPARSED_GEMINI_OUTPUT',\n    message: text || JSON.stringify(data),\n    actions: [],\n  };\n}\n\nreturn { json: parsed };"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          816,
+          -32
+        ],
+        "id": "7c0b0422-4a31-4ba8-991b-110c20e37811",
+        "name": "Parse Gemini JSON"
+      },
+      {
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "={{$json.chatId}}",
+          "text": "={{$json.text}}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegramTool",
+        "typeVersion": 1.2,
+        "position": [
+          928,
+          -32
+        ],
+        "id": "1dd1ff80-f046-4ca2-9014-5d6838cf4dc1",
+        "name": "Telegram"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const raw = String($env.TELEGRAM_CHAT_IDS ?? $env.TELEGRAM_CHAT_ID ?? '').trim();\nconst chatIds = raw\n  .split(/[\\s,]+/)\n  .map((s) => s.trim())\n  .filter(Boolean);\n\nif (!chatIds.length) {\n  throw new Error('Missing TELEGRAM_CHAT_IDS (comma-separated) or TELEGRAM_CHAT_ID');\n}\n\nconst title = $json?.title ?? '';\nconst message = $json?.message ?? '';\nconst actions = Array.isArray($json?.actions) ? $json.actions : [];\n\nconst text =\n  title +\n  \"\\n\\n\" +\n  message +\n  \"\\n\\nHành động đề xuất:\\n- \" +\n  (actions.length ? actions.join(\"\\n- \") : '(không có)');\n\nreturn chatIds.map((chatId) => ({ json: { chatId, text } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          872,
+          -32
+        ],
+        "id": "c1efc4b5-6b63-4e70-bf69-46ba1c9f57ba",
+        "name": "Fan-out Telegram Chats"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Message a model",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Message a model": {
+        "main": [
+          [
+            {
+              "node": "Parse Gemini JSON",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Gemini JSON": {
+        "main": [
+          [
+            {
+              "node": "Fan-out Telegram Chats",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fan-out Telegram Chats": {
+        "main": [
+          [
+            {
+              "node": "Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": false
+    }
+  }
+]

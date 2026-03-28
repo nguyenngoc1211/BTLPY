@@ -1,0 +1,15 @@
+# Pinned close to the BDCC-style environment notes in messenger.txt to reduce ABI/version churn.
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.7.2
+matplotlib==3.9.2
+
+lightgbm>=4.3.0
+joblib>=1.4.2
+
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+
+requests>=2.31
+watchdog>=4.0

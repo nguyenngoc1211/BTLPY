@@ -1,0 +1,4 @@
+model_out_suricata_subset/
+*.joblib
+__pycache__/
+.venv/

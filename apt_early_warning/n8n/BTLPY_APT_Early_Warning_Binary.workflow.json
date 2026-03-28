@@ -1,0 +1,189 @@
+[
+  {
+    "name": "BTLPY_APT_Early_Warning_Binary",
+    "active": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "apt-ingest-binary",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "d97f1901-19ca-4b1f-b995-ec2e0be11d9a",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://host.docker.internal:8000/score",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{JSON.stringify($json.body)}}",
+          "options": {}
+        },
+        "id": "2f793e59-dbff-4fb9-9757-7fb42572f067",
+        "name": "HTTP Request /score",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          240,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "56c9fbbf-b823-4bac-b1d1-5f9fd89315e1",
+                "leftValue": "={{$json.decision}}",
+                "rightValue": "ALERT",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "3ca262e8-6ab8-4a66-a5f8-36f1aef9b372",
+        "name": "If ALERT?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          480,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[APT ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)} severity=${s.severity}`,\n    suggested_actions: [\n      'Cô lập endpoint nguồn khỏi mạng nội bộ quan trọng',\n      'Đối chiếu IOC (IP/Domain) với firewall và DNS logs',\n      'Thu thập thêm telemetry 15 phút trước/sau sự kiện'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
+        },
+        "id": "837e4e4f-cc72-4bbe-b047-25495f462f75",
+        "name": "Build ALERT Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          720,
+          -100
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[NO ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)}`,\n    suggested_actions: [\n      'Tiếp tục giám sát lưu lượng liên quan',\n      'Lưu event vào kho log để phục vụ correlation',\n      'Đánh giá lại threshold nếu có nhiều false-positive/false-negative'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
+        },
+        "id": "ea7de9c2-287a-44da-9d9e-34f25148604e",
+        "name": "Build NO_ALERT Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          720,
+          100
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "4f6483c5-46b5-4d85-acab-399f148a5f9f",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          980,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request /score",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request /score": {
+        "main": [
+          [
+            {
+              "node": "If ALERT?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If ALERT?": {
+        "main": [
+          [
+            {
+              "node": "Build ALERT Response",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Build NO_ALERT Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build ALERT Response": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build NO_ALERT Response": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": false
+    }
+  }
+]

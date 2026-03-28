@@ -1,0 +1,21 @@
+[Unit]
+Description=APT Early Warning - Web Events Collector -> score -> n8n
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/apt_early_warning_web_collector.env
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/home/sealorl/BTLPY
+
+User=sealorl
+Group=sealorl
+
+ExecStart=/home/sealorl/BTLPY/.venv/bin/python3 -m apt_early_warning.web_events_to_n8n
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

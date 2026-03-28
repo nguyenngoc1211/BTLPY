@@ -1,0 +1,18 @@
+{
+  "features": {
+    "Flow Duration": 5432931.0,
+    "Total Fwd Packet": 5.0,
+    "Total Bwd packets": 8.0,
+    "Total Length of Fwd Packet": 1147.0,
+    "Total Length of Bwd Packet": 1426.0,
+    "Flow Bytes/s": 473.5933513604351,
+    "Flow Packets/s": 2.3928152225750705
+  },
+  "flow_meta": {
+    "src_ip": "192.168.1.121",
+    "dst_ip": "195.88.209.221",
+    "protocol": 6,
+    "source": "flowFeatures.csv",
+    "sample_label": "APT"
+  }
+}

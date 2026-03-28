@@ -1,0 +1,21 @@
+[Unit]
+Description=APT Early Warning - Access Log to JSONL Event Parser
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/apt_early_warning_web_log_parser.env
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/home/sealorl/BTLPY
+
+User=sealorl
+Group=sealorl
+
+ExecStart=/home/sealorl/BTLPY/.venv/bin/python3 -m apt_early_warning.web_accesslog_to_events
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

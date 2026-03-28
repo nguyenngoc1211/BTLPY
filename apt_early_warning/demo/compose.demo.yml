@@ -1,0 +1,36 @@
+services:
+  scoring:
+    build:
+      context: ../..
+      dockerfile: apt_early_warning/demo/Dockerfile.scoring
+    container_name: apt-scoring-demo
+    environment:
+      - BUNDLE_PATH=/models/lgbm_flowfeatures_web_rich_v2.joblib
+      # Optional policy knobs:
+      # - ALERT_STAGES=Lateral Movement,Data Exfiltration
+      # - ALERT_MIN_CONF_HIGH_IMPACT=0.55
+      # - ALERT_MIN_CONF_NON_BENIGN=0.80
+    volumes:
+      - ../model_out_flowfeatures:/models:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n-demo
+    depends_on:
+      - scoring
+    ports:
+      - "5678:5678"
+    environment:
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+      - N8N_LOG_LEVEL=info
+      - N8N_DIAGNOSTICS_ENABLED=false
+    volumes:
+      - n8n_demo_data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  n8n_demo_data:

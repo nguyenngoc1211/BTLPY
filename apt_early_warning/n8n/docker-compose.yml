@@ -1,0 +1,54 @@
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+
+    # Allow containers to reach services bound on the Docker host at:
+    #   http://host.docker.internal:<port>
+    # On Linux this needs host-gateway mapping.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    ports:
+      - "5678:5678"
+    environment:
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+
+      # Khuyến nghị cho NCKH (debug + ổn định)
+      - NODE_ENV=production
+      - EXECUTIONS_MODE=regular
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
+
+      # (tuỳ chọn – ghi rõ trong báo cáo)
+      - N8N_LOG_LEVEL=info
+
+      # Telegram alerts (optional)
+      # - TELEGRAM_CHAT_IDS=5842496719,1234567890
+      # - TELEGRAM_CHAT_ID=5842496719
+      - TELEGRAM_CHAT_IDS=${TELEGRAM_CHAT_IDS}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+      # ⭐ CỰC KỲ QUAN TRỌNG: thư mục output cho Wazuh
+      - /var/log/ai-mitre:/var/log/ai-mitre
+
+      # (tuỳ chọn) nếu Suricata chạy trên host
+      - /var/log/suricata:/var/log/suricata:ro
+
+    networks:
+      - socknet
+
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+
+networks:
+  socknet:
+    external: true
+    name: SockNet

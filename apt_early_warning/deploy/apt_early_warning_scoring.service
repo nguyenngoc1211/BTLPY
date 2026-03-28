@@ -1,0 +1,21 @@
+[Unit]
+Description=APT Early Warning - Scoring API (FastAPI/Uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/apt_early_warning_scoring.env
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/home/sealorl/BTLPY
+
+User=sealorl
+Group=sealorl
+
+ExecStart=/home/sealorl/BTLPY/.venv/bin/uvicorn apt_early_warning.inference_service:app --host ${HOST} --port ${PORT}
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

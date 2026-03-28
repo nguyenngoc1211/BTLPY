@@ -1,0 +1,304 @@
+[
+  {
+    "name": "BTLPY_APT_ML_First",
+    "active": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "apt-ingest-ml",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "9f0c2fd3-6718-40f1-a63e-dd0250dbfa8a",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://host.docker.internal:8000/score",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{JSON.stringify($json.body)}}",
+          "options": {
+            "timeout": 15000
+          }
+        },
+        "id": "623b84e6-061d-464a-8efd-6e7f1386a010",
+        "name": "HTTP Request /score",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          240,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "abfca2f4-59dd-4f6c-a561-5d4a23f8db45",
+                "leftValue": "={{$json.decision}}",
+                "rightValue": "ALERT",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "9bb4d9e4-4fc2-42c7-8054-154ac2d8116d",
+        "name": "If ALERT?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          480,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "value": "models/gemini-2.5-flash",
+            "mode": "list",
+            "cachedResultName": "models/gemini-2.5-flash"
+          },
+          "messages": {
+            "values": [
+              {
+                "content": "=Bạn là SOC analyst. Hãy viết nội dung cảnh báo Telegram ngắn gọn bằng tiếng Việt từ kết quả chấm điểm sau.\\nYêu cầu:\\n- Nêu label/stage, confidence, severity, src/dst/proto nếu có\\n- Đưa ra đúng 3 hành động đề xuất\\n- Chỉ trả về JSON hợp lệ, không thêm chữ khác\\nSchema bắt buộc:\\n{\\n  \\\"title\\\": \\\"...\\\",\\n  \\\"message\\\": \\\"...\\\",\\n  \\\"actions\\\": [\\\"...\\\",\\\"...\\\",\\\"...\\\"]\\n}\\n\\nInput:\\n{{ JSON.stringify($node[\"HTTP Request /score\"].json, null, 2) }}"
+              }
+            ]
+          },
+          "jsonOutput": true,
+          "builtInTools": {},
+          "options": {}
+        },
+        "id": "6466ea61-e8aa-49d4-a730-48693358df1b",
+        "name": "Message a model",
+        "type": "@n8n/n8n-nodes-langchain.googleGemini",
+        "typeVersion": 1.1,
+        "position": [
+          740,
+          -120
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const data = $input.item.json;\nconst text = data?.content?.parts?.[0]?.text ?? data?.text ?? '';\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  parsed = {\n    title: 'APT ALERT',\n    message: text || 'Không parse được output từ LLM, dùng fallback text.',\n    actions: [\n      'Cô lập endpoint nguồn khỏi mạng nội bộ quan trọng',\n      'Đối chiếu IOC với firewall và DNS logs',\n      'Thu thập thêm telemetry 15 phút trước/sau sự kiện'\n    ]\n  };\n}\nif (!Array.isArray(parsed.actions)) {\n  parsed.actions = [];\n}\nif (parsed.actions.length === 0) {\n  parsed.actions = [\n    'Cô lập endpoint nguồn khỏi mạng nội bộ quan trọng',\n    'Đối chiếu IOC với firewall và DNS logs',\n    'Thu thập thêm telemetry 15 phút trước/sau sự kiện'\n  ];\n}\nreturn { json: parsed };"
+        },
+        "id": "9d1f3f7e-8f89-44d6-bf0a-e95ebd6b8f8a",
+        "name": "Parse Gemini JSON",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          960,
+          -120
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const s = $node['HTTP Request /score'].json;\nconst llm = $json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_ML_First',\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    llm,\n    summary: `[APT ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)} severity=${s.severity}`,\n    suggested_actions: Array.isArray(llm.actions) ? llm.actions : [],\n    ts: new Date().toISOString()\n  }\n};"
+        },
+        "id": "a9235e6e-13e8-4e96-8f22-b7e396da8fe0",
+        "name": "Build ALERT Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1180,
+          -120
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_ML_First',\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[NO ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)}`,\n    suggested_actions: [\n      'Tiếp tục giám sát lưu lượng liên quan',\n      'Lưu event vào kho log để phục vụ correlation',\n      'Đánh giá lại threshold nếu có nhiều false-positive/false-negative'\n    ],\n    ts: new Date().toISOString()\n  }\n};"
+        },
+        "id": "4168390d-4ea7-4fb6-96db-7029ce22ea31",
+        "name": "Build NO_ALERT Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          740,
+          120
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "language": "javaScript",
+          "jsCode": "const raw = String($env.TELEGRAM_CHAT_IDS ?? $env.TELEGRAM_CHAT_ID ?? '').trim();\nconst chatIds = raw.split(/[\\s,]+/).map((s) => s.trim()).filter(Boolean);\nconst title = $json?.llm?.title ?? 'APT ALERT';\nconst message = $json?.llm?.message ?? $json?.summary ?? '';\nconst actions = Array.isArray($json?.suggested_actions) ? $json.suggested_actions : [];\nconst text = title + '\\n\\n' + message + '\\n\\nHành động đề xuất:\\n- ' + (actions.length ? actions.join('\\n- ') : '(không có)');\nif (!chatIds.length) return [];\nreturn chatIds.map((chatId) => ({ json: { chatId, text } }));"
+        },
+        "id": "2549de8e-e04a-4a3a-9d27-f650571f0286",
+        "name": "Fan-out Telegram Chats",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1420,
+          -220
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "={{$json.chatId}}",
+          "text": "={{$json.text}}",
+          "additionalFields": {}
+        },
+        "id": "d5fbe126-c248-4f9b-aa8d-f3396ed6da3f",
+        "name": "Telegram",
+        "type": "n8n-nodes-base.telegramTool",
+        "typeVersion": 1.2,
+        "position": [
+          1640,
+          -220
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{$json}}",
+          "options": {}
+        },
+        "id": "4ca0d68a-7930-40e9-ad2f-70d22eeaf78d",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          1420,
+          20
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request /score",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request /score": {
+        "main": [
+          [
+            {
+              "node": "If ALERT?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If ALERT?": {
+        "main": [
+          [
+            {
+              "node": "Message a model",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Build NO_ALERT Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Message a model": {
+        "main": [
+          [
+            {
+              "node": "Parse Gemini JSON",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Gemini JSON": {
+        "main": [
+          [
+            {
+              "node": "Build ALERT Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build ALERT Response": {
+        "main": [
+          [
+            {
+              "node": "Fan-out Telegram Chats",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build NO_ALERT Response": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fan-out Telegram Chats": {
+        "main": [
+          [
+            {
+              "node": "Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": false
+    }
+  }
+]

@@ -1,0 +1,21 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n-demo
+    ports:
+      - "5678:5678"
+    environment:
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+      - N8N_LOG_LEVEL=info
+      - N8N_DIAGNOSTICS_ENABLED=false
+    # Cho container gọi service trên host: http://host.docker.internal:8000/score
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_demo_data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  n8n_demo_data:
+

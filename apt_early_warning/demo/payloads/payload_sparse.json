@@ -1,0 +1,12 @@
+{
+  "features": {
+    "Flow Duration": 1200000.0,
+    "Flow Bytes/s": 1500.0
+  },
+  "flow_meta": {
+    "src_ip": "10.10.10.10",
+    "dst_ip": "8.8.8.8",
+    "protocol": 17,
+    "source": "sparse_payload_test"
+  }
+}

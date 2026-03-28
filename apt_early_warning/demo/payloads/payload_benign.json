@@ -1,0 +1,18 @@
+{
+  "features": {
+    "Flow Duration": 94589801.0,
+    "Total Fwd Packet": 22.0,
+    "Total Bwd packets": 22.0,
+    "Total Length of Fwd Packet": 1206.0,
+    "Total Length of Bwd Packet": 15553.0,
+    "Flow Bytes/s": 177.17554982487,
+    "Flow Packets/s": 0.465166429518125
+  },
+  "flow_meta": {
+    "src_ip": "192.168.1.55",
+    "dst_ip": "104.20.150.33",
+    "protocol": 6,
+    "source": "flowFeatures.csv",
+    "sample_label": "BENIGN"
+  }
+}
