@@ -1,375 +1,414 @@
-[
-  {
-    "name": "BTLPY_APT_LLM_Correlation",
-    "active": false,
-    "nodes": [
-      {
-        "parameters": {
-          "httpMethod": "POST",
-          "path": "apt-ingest-llm",
-          "responseMode": "responseNode",
-          "options": {}
-        },
-        "id": "444784ca-4659-4870-bd1f-afeb3d9e61c1",
-        "name": "Webhook",
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2.1,
-        "position": [
-          0,
-          0
-        ]
+{
+  "updatedAt": "2026-03-25T03:00:32.000Z",
+  "createdAt": "2026-03-24T14:42:40.158Z",
+  "id": "ys0zFJ8NKecWaWDd",
+  "name": "BTLPY_APT_LLM_Correlation",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apt-ingest-llm",
+        "responseMode": "responseNode",
+        "options": {}
       },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const raw = $json.body ?? $json;\nconst host = String(raw.src_ip ?? raw.host ?? raw.source_ip ?? 'unknown').trim();\nconst action = String(raw.alert ?? raw.action ?? raw.signature ?? raw.event ?? 'unknown_event').trim();\nconst severityRaw = Number(raw.severity ?? raw.alert_severity ?? 1);\nconst severity = Number.isFinite(severityRaw) ? Math.min(5, Math.max(1, severityRaw)) : 1;\nconst timestamp = raw.timestamp ? new Date(raw.timestamp).toISOString() : new Date().toISOString();\nreturn {\n  json: {\n    host,\n    action,\n    severity,\n    timestamp,\n    raw\n  }\n};"
-        },
-        "id": "aa7f5c2e-f7bd-4433-8b42-708e44db4a8d",
-        "name": "Normalize Event",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          260,
-          0
-        ]
+      "id": "444784ca-4659-4870-bd1f-afeb3d9e61c1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ce37509d-e469-449e-93dc-529c20e4b596"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.body ?? $json;\nconst host = String(raw.src_ip ?? raw.host ?? raw.source_ip ?? 'unknown').trim();\nconst action = String(raw.alert ?? raw.action ?? raw.signature ?? raw.event ?? 'unknown_event').trim();\nconst severityRaw = Number(raw.severity ?? raw.alert_severity ?? 1);\nconst severity = Number.isFinite(severityRaw) ? Math.min(5, Math.max(1, severityRaw)) : 1;\nconst timestamp = raw.timestamp ? new Date(raw.timestamp).toISOString() : new Date().toISOString();\nreturn {\n  json: {\n    host,\n    action,\n    severity,\n    timestamp,\n    raw\n  }\n};"
       },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const WINDOW_MS = 10 * 60 * 1000;\nconst now = Date.now();\nconst event = $json;\nconst store = $getWorkflowStaticData('global');\nif (!store.eventsByHost) store.eventsByHost = {};\nconst host = event.host || 'unknown';\nconst prev = Array.isArray(store.eventsByHost[host]) ? store.eventsByHost[host] : [];\nconst alive = prev.filter((e) => Number.isFinite(e.ts) && now - e.ts <= WINDOW_MS);\nalive.push({\n  ts: now,\n  timestamp: event.timestamp,\n  action: event.action,\n  severity: event.severity\n});\nstore.eventsByHost[host] = alive;\nconst event_count = alive.length;\nconst severity_avg = alive.reduce((a, b) => a + Number(b.severity || 0), 0) / Math.max(1, event_count);\nreturn {\n  json: {\n    host,\n    latest_event: event,\n    window_minutes: 10,\n    event_count,\n    severity_avg,\n    events: alive.map(({ timestamp, action, severity }) => ({ timestamp, action, severity }))\n  }\n};"
-        },
-        "id": "38ef9ec3-c25c-4475-a6f3-8d2f56ba0070",
-        "name": "Aggregate 10m",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          520,
-          0
-        ]
+      "id": "aa7f5c2e-f7bd-4433-8b42-708e44db4a8d",
+      "name": "Normalize Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const WINDOW_MS = 10 * 60 * 1000;\nconst now = Date.now();\nconst event = $json;\nconst store = getWorkflowStaticData('global');\nif (!store.eventsByHost) store.eventsByHost = {};\nconst host = event.host || 'unknown';\nconst prev = Array.isArray(store.eventsByHost[host]) ? store.eventsByHost[host] : [];\nconst alive = prev.filter((e) => Number.isFinite(e.ts) && now - e.ts <= WINDOW_MS);\nalive.push({\n  ts: now,\n  timestamp: event.timestamp,\n  action: event.action,\n  severity: event.severity\n});\nstore.eventsByHost[host] = alive;\nconst event_count = alive.length;\nconst severity_avg = alive.reduce((a, b) => a + Number(b.severity || 0), 0) / Math.max(1, event_count);\nreturn {\n  json: {\n    host,\n    latest_event: event,\n    window_minutes: 10,\n    event_count,\n    severity_avg,\n    events: alive.map(({ timestamp, action, severity }) => ({ timestamp, action, severity }))\n  }\n};"
       },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict",
-              "version": 3
-            },
-            "conditions": [
-              {
-                "id": "6e7bb0b8-8f80-4c3d-a1ba-154bd95fbb87",
-                "leftValue": "={{$json.event_count}}",
-                "rightValue": 3,
-                "operator": {
-                  "type": "number",
-                  "operation": "gte"
-                }
+      "id": "38ef9ec3-c25c-4475-a6f3-8d2f56ba0070",
+      "name": "Aggregate 10m",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6e7bb0b8-8f80-4c3d-a1ba-154bd95fbb87",
+              "leftValue": "={{$json.event_count}}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
               }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "f428ef53-f8ef-4f45-a4d7-066e08f087cb",
-        "name": "If event_count >= 3",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          760,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "modelId": {
-            "__rl": true,
-            "value": "models/gemini-2.5-flash",
-            "mode": "list",
-            "cachedResultName": "models/gemini-2.5-flash"
-          },
-          "messages": {
-            "values": [
-              {
-                "content": "=Bạn là SOC analyst. Phân tích chuỗi sự kiện bảo mật tương quan theo host.\\nMục tiêu:\\n1) Xác định attack_stage khả dĩ\\n2) Ước lượng risk từ 0..1\\n3) Trả confidence (low|medium|high)\\n4) Nêu reason ngắn gọn\\n\\nChỉ trả JSON hợp lệ đúng schema:\\n{\\n  \\\"risk\\\": 0.0,\\n  \\\"attack_stage\\\": \\\"...\\\",\\n  \\\"confidence\\\": \\\"low|medium|high\\\",\\n  \\\"reason\\\": \\\"...\\\"\\n}\\n\\nInput:\\n{{ JSON.stringify($json, null, 2) }}"
-              }
-            ]
-          },
-          "jsonOutput": true,
-          "builtInTools": {},
-          "options": {}
-        },
-        "id": "9841ae80-cab2-4da8-a61a-be726f8a9be6",
-        "name": "LLM Threat Analysis",
-        "type": "@n8n/n8n-nodes-langchain.googleGemini",
-        "typeVersion": 1.1,
-        "position": [
-          1020,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const agg = $node['Aggregate 10m'].json;\nconst data = $input.item.json;\nconst text = data?.content?.parts?.[0]?.text ?? data?.text ?? '';\nlet llm;\ntry {\n  llm = JSON.parse(text);\n} catch (e) {\n  llm = { risk: 0.0, attack_stage: 'Unknown', confidence: 'low', reason: text || 'unparsed' };\n}\nconst clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));\nconst llm_risk = clamp(Number(llm.risk ?? 0), 0, 1);\nconst ids_component = clamp(Number(agg.severity_avg ?? 1) / 5, 0, 1);\nconst final_score = 0.6 * llm_risk + 0.4 * ids_component;\nlet decision = 'benign';\nif (final_score >= 0.7) decision = 'potential_apt';\nelse if (final_score >= 0.3) decision = 'suspicious';\nreturn {\n  json: {\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    host: agg.host,\n    event_count: agg.event_count,\n    events: agg.events,\n    ids_severity_avg: agg.severity_avg,\n    llm_risk,\n    attack_stage: String(llm.attack_stage ?? 'Unknown'),\n    confidence: String(llm.confidence ?? 'low'),\n    reason: String(llm.reason ?? ''),\n    final_score: Number(final_score.toFixed(4)),\n    decision,\n    ts: new Date().toISOString()\n  }\n};"
-        },
-        "id": "85f31e39-7f90-4d4a-9349-c394f0759db5",
-        "name": "Risk Scoring",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1260,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict",
-              "version": 3
-            },
-            "conditions": [
-              {
-                "id": "0cd17ad4-c3b8-4f9d-8ced-032dd45f8c0f",
-                "leftValue": "={{$json.decision}}",
-                "rightValue": "potential_apt",
-                "operator": {
-                  "type": "string",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "6a38b3d0-4772-4545-8956-2940f3a0037a",
-        "name": "If potential_apt",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          1480,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const raw = String($env.TELEGRAM_CHAT_IDS ?? $env.TELEGRAM_CHAT_ID ?? '').trim();\nconst chatIds = raw.split(/[\\s,]+/).map((s) => s.trim()).filter(Boolean);\nconst x = $json;\nconst text = [\n  '🚨 Potential APT Activity',\n  `Host: ${x.host}`,\n  `Risk Score: ${x.final_score}`,\n  `Stage: ${x.attack_stage}`,\n  `Confidence: ${x.confidence}`,\n  '',\n  `Reason: ${x.reason}`\n].join('\\n');\nif (!chatIds.length) return [];\nreturn chatIds.map((chatId) => ({ json: { chatId, text } }));"
-        },
-        "id": "4346f69d-5ce4-4194-ab52-cd00fbeff901",
-        "name": "Fan-out Telegram Chats",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1720,
-          -220
-        ]
-      },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "sendMessage",
-          "chatId": "={{$json.chatId}}",
-          "text": "={{$json.text}}",
-          "additionalFields": {}
-        },
-        "id": "53cab950-2403-42ff-8c4f-7cfe1a1f6f3d",
-        "name": "Telegram",
-        "type": "n8n-nodes-base.telegramTool",
-        "typeVersion": 1.2,
-        "position": [
-          1940,
-          -220
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const x = $node['Risk Scoring'].json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    decision: x.decision,\n    final_score: x.final_score,\n    host: x.host,\n    attack_stage: x.attack_stage,\n    confidence: x.confidence,\n    reason: x.reason,\n    event_count: x.event_count,\n    ts: x.ts\n  }\n};"
-        },
-        "id": "56f0d7f9-d6e9-4f4f-a242-53c0ea79559a",
-        "name": "Build LLM Result Response",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1720,
-          -20
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const a = $json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    decision: 'monitor',\n    reason: 'Not enough correlated events yet (need >= 3 in 10 minutes).',\n    host: a.host,\n    event_count: a.event_count,\n    events: a.events,\n    ts: new Date().toISOString()\n  }\n};"
-        },
-        "id": "7970cf56-fec0-4f18-ae76-5b6c8dd4c2ba",
-        "name": "Build Low-Evidence Response",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1020,
-          120
-        ]
-      },
-      {
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={{$json}}",
-          "options": {}
-        },
-        "id": "d3f02e53-9e48-4e6f-9b95-e070b468ce35",
-        "name": "Respond",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1,
-        "position": [
-          1960,
-          -20
-        ]
-      }
-    ],
-    "connections": {
-      "Webhook": {
-        "main": [
-          [
-            {
-              "node": "Normalize Event",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Normalize Event": {
-        "main": [
-          [
-            {
-              "node": "Aggregate 10m",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Aggregate 10m": {
-        "main": [
-          [
-            {
-              "node": "If event_count >= 3",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "If event_count >= 3": {
-        "main": [
-          [
-            {
-              "node": "LLM Threat Analysis",
-              "type": "main",
-              "index": 0
             }
           ],
-          [
-            {
-              "node": "Build Low-Evidence Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "LLM Threat Analysis": {
-        "main": [
-          [
+      "id": "f428ef53-f8ef-4f45-a4d7-066e08f087cb",
+      "name": "If event_count >= 3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
             {
-              "node": "Risk Scoring",
-              "type": "main",
-              "index": 0
+              "content": "=Bạn là SOC analyst. Phân tích chuỗi sự kiện bảo mật tương quan theo host.\\nMục tiêu:\\n1) Xác định attack_stage khả dĩ\\n2) Ước lượng risk từ 0..1\\n3) Trả confidence (low|medium|high)\\n4) Nêu reason ngắn gọn\\n\\nChỉ trả JSON hợp lệ đúng schema:\\n{\\n  \\\"risk\\\": 0.0,\\n  \\\"attack_stage\\\": \\\"...\\\",\\n  \\\"confidence\\\": \\\"low|medium|high\\\",\\n  \\\"reason\\\": \\\"...\\\"\\n}\\n\\nInput:\\n{{ JSON.stringify($json, null, 2) }}"
             }
           ]
-        ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
       },
-      "Risk Scoring": {
-        "main": [
-          [
-            {
-              "node": "If potential_apt",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "If potential_apt": {
-        "main": [
-          [
-            {
-              "node": "Fan-out Telegram Chats",
-              "type": "main",
-              "index": 0
-            },
-            {
-              "node": "Build LLM Result Response",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Build LLM Result Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Fan-out Telegram Chats": {
-        "main": [
-          [
-            {
-              "node": "Telegram",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Build LLM Result Response": {
-        "main": [
-          [
-            {
-              "node": "Respond",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Build Low-Evidence Response": {
-        "main": [
-          [
-            {
-              "node": "Respond",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "id": "9841ae80-cab2-4da8-a61a-be726f8a9be6",
+      "name": "LLM Threat Analysis",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        -352
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YSJ4llq850jdPUVX",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
       }
     },
-    "settings": {
-      "executionOrder": "v1",
-      "availableInMCP": false
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const agg = $node['Aggregate 10m'].json;\nconst data = $input.item.json;\nconst text = data?.content?.parts?.[0]?.text ?? data?.text ?? '';\nlet llm;\ntry {\n  llm = JSON.parse(text);\n} catch (e) {\n  llm = { risk: 0.0, attack_stage: 'Unknown', confidence: 'low', reason: text || 'unparsed' };\n}\nconst clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));\nconst llm_risk = clamp(Number(llm.risk ?? 0), 0, 1);\nconst ids_component = clamp(Number(agg.severity_avg ?? 1) / 5, 0, 1);\nconst final_score = 0.6 * llm_risk + 0.4 * ids_component;\nlet decision = 'benign';\nif (final_score >= 0.7) decision = 'potential_apt';\nelse if (final_score >= 0.3) decision = 'suspicious';\nreturn {\n  json: {\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    host: agg.host,\n    event_count: agg.event_count,\n    events: agg.events,\n    ids_severity_avg: agg.severity_avg,\n    llm_risk,\n    attack_stage: String(llm.attack_stage ?? 'Unknown'),\n    confidence: String(llm.confidence ?? 'low'),\n    reason: String(llm.reason ?? ''),\n    final_score: Number(final_score.toFixed(4)),\n    decision,\n    ts: new Date().toISOString()\n  }\n};"
+      },
+      "id": "85f31e39-7f90-4d4a-9349-c394f0759db5",
+      "name": "Risk Scoring",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0cd17ad4-c3b8-4f9d-8ced-032dd45f8c0f",
+              "leftValue": "={{$json.decision}}",
+              "rightValue": "potential_apt",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6a38b3d0-4772-4545-8956-2940f3a0037a",
+      "name": "If potential_apt",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1488,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = String($env.TELEGRAM_CHAT_IDS ?? $env.TELEGRAM_CHAT_ID ?? '').trim();\nconst chatIds = raw.split(/[\\s,]+/).map((s) => s.trim()).filter(Boolean);\nconst x = $json;\nconst text = [\n  '🚨 Potential APT Activity',\n  `Host: ${x.host}`,\n  `Risk Score: ${x.final_score}`,\n  `Stage: ${x.attack_stage}`,\n  `Confidence: ${x.confidence}`,\n  '',\n  `Reason: ${x.reason}`\n].join('\\n');\nif (!chatIds.length) return [];\nreturn chatIds.map((chatId) => ({ json: { chatId, text } }));"
+      },
+      "id": "4346f69d-5ce4-4194-ab52-cd00fbeff901",
+      "name": "Fan-out Telegram Chats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "=5842496719",
+        "text": "={{$json.text}} 🚨 WARNING\n  Decision: {{$json.score?.decision || $json.decision || \"UNKNOWN\"}}\n  Stage: {{$json.score?.stage || $json.stage || \"UNKNOWN\"}}\n  Confidence: {{((($json.score?.confidence ?? $json.confidence ?? 0) *\n  100)).toFixed(2)}}%\n  Src: {{$json.flow_meta?.src_ip || $json.score?.flow_meta?.src_ip || \"N/\n  A\"}}\n  Dst: {{$json.flow_meta?.dest_ip || $json.score?.flow_meta?.dest_ip || \"N/\n  A\"}}:{{$json.flow_meta?.dest_port || $json.score?.flow_meta?.dest_port ||\n  \"N/A\"}}\n  Time: {{$now}}",
+        "additionalFields": {}
+      },
+      "id": "53cab950-2403-42ff-8c4f-7cfe1a1f6f3d",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        1952,
+        -224
+      ],
+      "webhookId": "f3c2b9aa-e6e2-4b00-b9b0-132ecc4ac09a",
+      "credentials": {
+        "telegramApi": {
+          "id": "FxfDktUGO7Lw9RtL",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const x = $node['Risk Scoring'].json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    decision: x.decision,\n    final_score: x.final_score,\n    host: x.host,\n    attack_stage: x.attack_stage,\n    confidence: x.confidence,\n    reason: x.reason,\n    event_count: x.event_count,\n    ts: x.ts\n  }\n};"
+      },
+      "id": "56f0d7f9-d6e9-4f4f-a242-53c0ea79559a",
+      "name": "Build LLM Result Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const a = $json;\nreturn {\n  json: {\n    ok: true,\n    workflow: 'BTLPY_APT_LLM_Correlation',\n    decision: 'monitor',\n    reason: 'Not enough correlated events yet (need >= 3 in 10 minutes).',\n    host: a.host,\n    event_count: a.event_count,\n    events: a.events,\n    ts: new Date().toISOString()\n  }\n};"
+      },
+      "id": "7970cf56-fec0-4f18-ae76-5b6c8dd4c2ba",
+      "name": "Build Low-Evidence Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "d3f02e53-9e48-4e6f-9b95-e070b468ce35",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        -16
+      ]
     }
-  }
-]
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Event": {
+      "main": [
+        [
+          {
+            "node": "Aggregate 10m",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate 10m": {
+      "main": [
+        [
+          {
+            "node": "If event_count >= 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If event_count >= 3": {
+      "main": [
+        [
+          {
+            "node": "LLM Threat Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Low-Evidence Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Threat Analysis": {
+      "main": [
+        [
+          {
+            "node": "Risk Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Scoring": {
+      "main": [
+        [
+          {
+            "node": "If potential_apt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If potential_apt": {
+      "main": [
+        [
+          {
+            "node": "Fan-out Telegram Chats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build LLM Result Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build LLM Result Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fan-out Telegram Chats": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build LLM Result Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Low-Evidence Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f81e1b17-ff02-4c17-9b07-5c9498902009",
+  "activeVersionId": null,
+  "versionCounter": 4,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-03-24T14:42:40.162Z",
+      "createdAt": "2026-03-24T14:42:40.162Z",
+      "role": "workflow:owner",
+      "workflowId": "ys0zFJ8NKecWaWDd",
+      "projectId": "fUACiaFKCcwGNy9e",
+      "project": {
+        "updatedAt": "2026-02-22T10:15:47.644Z",
+        "createdAt": "2026-01-20T07:14:41.011Z",
+        "id": "fUACiaFKCcwGNy9e",
+        "name": "B23DCAT216 Ngọc <hieuhuu113@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "69c54faa-347c-438b-a8df-ec0d86ac0345"
+      }
+    }
+  ],
+  "_id": "ys0zFJ8NKecWaWDd"
+}

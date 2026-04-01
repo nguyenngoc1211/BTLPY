@@ -1,189 +1,261 @@
-[
-  {
-    "name": "BTLPY_APT_Early_Warning_Binary",
-    "active": false,
-    "nodes": [
-      {
-        "parameters": {
-          "httpMethod": "POST",
-          "path": "apt-ingest-binary",
-          "responseMode": "responseNode",
-          "options": {}
-        },
-        "id": "d97f1901-19ca-4b1f-b995-ec2e0be11d9a",
-        "name": "Webhook",
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2.1,
-        "position": [
-          0,
-          0
-        ]
+{
+  "updatedAt": "2026-03-25T03:00:20.000Z",
+  "createdAt": "2026-03-18T17:39:16.338Z",
+  "id": "DMFDrXF6PWXlnYYw",
+  "name": "BTLPY_APT_Early_Warning_Binary",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apt-ingest-binary",
+        "responseMode": "responseNode",
+        "options": {}
       },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "http://host.docker.internal:8000/score",
-          "sendBody": true,
-          "contentType": "raw",
-          "rawContentType": "application/json",
-          "body": "={{JSON.stringify($json.body)}}",
-          "options": {}
-        },
-        "id": "2f793e59-dbff-4fb9-9757-7fb42572f067",
-        "name": "HTTP Request /score",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          240,
-          0
-        ]
+      "id": "d97f1901-19ca-4b1f-b995-ec2e0be11d9a",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "6188b184-8423-4765-8e67-e0a5be739dd3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{JSON.stringify($json.body)}}",
+        "options": {}
       },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict",
-              "version": 3
-            },
-            "conditions": [
-              {
-                "id": "56c9fbbf-b823-4bac-b1d1-5f9fd89315e1",
-                "leftValue": "={{$json.decision}}",
-                "rightValue": "ALERT",
-                "operator": {
-                  "type": "string",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
+      "id": "2f793e59-dbff-4fb9-9757-7fb42572f067",
+      "name": "HTTP Request /score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
           },
-          "options": {}
-        },
-        "id": "3ca262e8-6ab8-4a66-a5f8-36f1aef9b372",
-        "name": "If ALERT?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
-        "position": [
-          480,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[APT ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)} severity=${s.severity}`,\n    suggested_actions: [\n      'Cô lập endpoint nguồn khỏi mạng nội bộ quan trọng',\n      'Đối chiếu IOC (IP/Domain) với firewall và DNS logs',\n      'Thu thập thêm telemetry 15 phút trước/sau sự kiện'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
-        },
-        "id": "837e4e4f-cc72-4bbe-b047-25495f462f75",
-        "name": "Build ALERT Response",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          720,
-          -100
-        ]
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "language": "javaScript",
-          "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[NO ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)}`,\n    suggested_actions: [\n      'Tiếp tục giám sát lưu lượng liên quan',\n      'Lưu event vào kho log để phục vụ correlation',\n      'Đánh giá lại threshold nếu có nhiều false-positive/false-negative'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
-        },
-        "id": "ea7de9c2-287a-44da-9d9e-34f25148604e",
-        "name": "Build NO_ALERT Response",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          720,
-          100
-        ]
-      },
-      {
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={{ $json }}",
-          "options": {}
-        },
-        "id": "4f6483c5-46b5-4d85-acab-399f148a5f9f",
-        "name": "Respond",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1,
-        "position": [
-          980,
-          0
-        ]
-      }
-    ],
-    "connections": {
-      "Webhook": {
-        "main": [
-          [
+          "conditions": [
             {
-              "node": "HTTP Request /score",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "HTTP Request /score": {
-        "main": [
-          [
-            {
-              "node": "If ALERT?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "If ALERT?": {
-        "main": [
-          [
-            {
-              "node": "Build ALERT Response",
-              "type": "main",
-              "index": 0
+              "id": "56c9fbbf-b823-4bac-b1d1-5f9fd89315e1",
+              "leftValue": "={{$json.decision}}",
+              "rightValue": "ALERT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
-          [
-            {
-              "node": "Build NO_ALERT Response",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "Build ALERT Response": {
-        "main": [
-          [
-            {
-              "node": "Respond",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Build NO_ALERT Response": {
-        "main": [
-          [
-            {
-              "node": "Respond",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
+      "id": "3ca262e8-6ab8-4a66-a5f8-36f1aef9b372",
+      "name": "If ALERT?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ]
     },
-    "settings": {
-      "executionOrder": "v1",
-      "availableInMCP": false
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[APT ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)} severity=${s.severity}`,\n    suggested_actions: [\n      'Cô lập endpoint nguồn khỏi mạng nội bộ quan trọng',\n      'Đối chiếu IOC (IP/Domain) với firewall và DNS logs',\n      'Thu thập thêm telemetry 15 phút trước/sau sự kiện'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
+      },
+      "id": "837e4e4f-cc72-4bbe-b047-25495f462f75",
+      "name": "Build ALERT Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const s = $json;\nreturn {\n  json: {\n    ok: true,\n    decision: s.decision,\n    severity: s.severity,\n    label: s.stage,\n    confidence: s.confidence,\n    proba: s.proba ?? {},\n    flow_meta: s.flow_meta ?? null,\n    score: s,\n    summary: `[NO ALERT] label=${s.stage} confidence=${Number(s.confidence).toFixed(4)}`,\n    suggested_actions: [\n      'Tiếp tục giám sát lưu lượng liên quan',\n      'Lưu event vào kho log để phục vụ correlation',\n      'Đánh giá lại threshold nếu có nhiều false-positive/false-negative'\n    ],\n    workflow: 'BTLPY_APT_Early_Warning_Binary',\n    ts: new Date().toISOString()\n  }\n};"
+      },
+      "id": "ea7de9c2-287a-44da-9d9e-34f25148604e",
+      "name": "Build NO_ALERT Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        -96
+      ],
+      "id": "47aa97a5-be06-43e0-b123-160913fec5df",
+      "name": "When chat message received",
+      "webhookId": "d809c91d-96b2-4587-881c-9b6680f054ad"
+    },
+    {
+      "parameters": {
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1088,
+        -96
+      ],
+      "id": "7a784059-fa8e-4161-9819-f91fd957c9ef",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        -96
+      ],
+      "id": "d61ea236-f87d-4790-a7be-cef754ad0815",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YSJ4llq850jdPUVX",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
     }
-  }
-]
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request /score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request /score": {
+      "main": [
+        [
+          {
+            "node": "If ALERT?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If ALERT?": {
+      "main": [
+        [
+          {
+            "node": "Build ALERT Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build NO_ALERT Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build ALERT Response": {
+      "main": [
+        []
+      ]
+    },
+    "Build NO_ALERT Response": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "225da962-1feb-446b-b62b-b53287db0ca6",
+  "activeVersionId": null,
+  "versionCounter": 4,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-03-18T17:39:16.344Z",
+      "createdAt": "2026-03-18T17:39:16.344Z",
+      "role": "workflow:owner",
+      "workflowId": "DMFDrXF6PWXlnYYw",
+      "projectId": "fUACiaFKCcwGNy9e",
+      "project": {
+        "updatedAt": "2026-02-22T10:15:47.644Z",
+        "createdAt": "2026-01-20T07:14:41.011Z",
+        "id": "fUACiaFKCcwGNy9e",
+        "name": "B23DCAT216 Ngọc <hieuhuu113@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "69c54faa-347c-438b-a8df-ec0d86ac0345"
+      }
+    }
+  ],
+  "_id": "DMFDrXF6PWXlnYYw"
+}

@@ -1,0 +1,182 @@
+{
+  "updatedAt": "2026-03-18T17:28:05.000Z",
+  "createdAt": "2026-02-22T10:20:29.445Z",
+  "id": "X4drKKxbroI6kZzosTAhr",
+  "name": "BTLPY",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apt-ingest",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "bf85f6de-fb14-496d-8371-221428776d6f",
+      "name": "Webhook",
+      "webhookId": "a8687074-f9d9-481e-98e6-c088443c4abf"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/score",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "= {{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        224,
+        -32
+      ],
+      "id": "f19b3ce9-4ad3-4ccf-b0c1-573b8cea0b1c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e636399e-7742-4afd-bad8-2032411da404",
+              "leftValue": "= {{$json.decision}}",
+              "rightValue": "ALERT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -32
+      ],
+      "id": "7cec8cad-b932-449c-af2d-ed3d759b0a87",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Bạn là SOC analyst. Viết cảnh báo Telegram ngắn gọn bằng tiếng Việt từ\n  JSON sau.\n  - Nêu: stage, confidence, severity, src/dst, và 3 hành động đề xuất.\nChỉ trả về JSON hợp lệ, không kèm chữ khác”, ví dụ:\n  Chỉ trả về JSON hợp lệ dạng:\n  {\"title\":\"...\",\n    \"message\":\"...\",\n    \"actions\":[\"...\",\"...\",\"...\"]}\n  JSON:\n  {{ JSON.stringify($node[\"HTTP Request\"].json, null, 2) }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -32
+      ],
+      "id": "f1417558-14b2-471d-9c31-a79a42305635",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "dUtbcuE2Ufk4rwCn",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "689020bf-6844-4a6f-97a9-3a3ff597cc68",
+  "activeVersionId": null,
+  "versionCounter": 5,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-02-22T10:20:29.451Z",
+      "createdAt": "2026-02-22T10:20:29.451Z",
+      "role": "workflow:owner",
+      "workflowId": "X4drKKxbroI6kZzosTAhr",
+      "projectId": "fUACiaFKCcwGNy9e",
+      "project": {
+        "updatedAt": "2026-02-22T10:15:47.644Z",
+        "createdAt": "2026-01-20T07:14:41.011Z",
+        "id": "fUACiaFKCcwGNy9e",
+        "name": "B23DCAT216 Ngọc <hieuhuu113@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "69c54faa-347c-438b-a8df-ec0d86ac0345"
+      }
+    }
+  ],
+  "_id": "X4drKKxbroI6kZzosTAhr"
+}
