@@ -1,0 +1,60 @@
+{
+  "chosen": {
+    "target_future_alert_rate": 0.05,
+    "threshold": 0.99998840228381,
+    "future_alert_rate": 0.05002896413713202,
+    "val_precision": 0.9999046039596695,
+    "val_recall": 0.8834234514593949,
+    "val_f1": 0.9380619311845131
+  },
+  "tradeoff": [
+    {
+      "target_future_alert_rate": 0.1,
+      "threshold": 0.9999617259034789,
+      "future_alert_rate": 0.10000526620675128,
+      "val_precision": 0.9999033035646451,
+      "val_recall": 0.9385835245912267,
+      "val_f1": 0.9682735557227656
+    },
+    {
+      "target_future_alert_rate": 0.05,
+      "threshold": 0.99998840228381,
+      "future_alert_rate": 0.05002896413713202,
+      "val_precision": 0.9999046039596695,
+      "val_recall": 0.8834234514593949,
+      "val_f1": 0.9380619311845131
+    },
+    {
+      "target_future_alert_rate": 0.02,
+      "threshold": 0.9999978319149239,
+      "future_alert_rate": 0.019958923587340038,
+      "val_precision": 0.9999814379982738,
+      "val_recall": 0.6985451433461703,
+      "val_f1": 0.8225154491219097
+    },
+    {
+      "target_future_alert_rate": 0.01,
+      "threshold": 0.999998833884942,
+      "future_alert_rate": 0.009689820422349782,
+      "val_precision": 1.0,
+      "val_recall": 0.38032442525382193,
+      "val_f1": 0.5510652688535678
+    },
+    {
+      "target_future_alert_rate": 0.005,
+      "threshold": 0.9999991641744171,
+      "future_alert_rate": 0.0036336826583811682,
+      "val_precision": 1.0,
+      "val_recall": 0.2954966870242865,
+      "val_f1": 0.45619057151436293
+    },
+    {
+      "target_future_alert_rate": 0.001,
+      "threshold": 0.9999993812955247,
+      "future_alert_rate": 0.0007372689451787877,
+      "val_precision": 1.0,
+      "val_recall": 0.10550952399476148,
+      "val_f1": 0.1908794482629196
+    }
+  ]
+}
