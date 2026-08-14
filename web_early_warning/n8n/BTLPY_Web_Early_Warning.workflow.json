@@ -1,0 +1,139 @@
+{
+  "updatedAt": "2026-03-28T16:29:37.420Z",
+  "createdAt": "2026-02-26T04:13:46.089Z",
+  "id": "iqonggygcJSgWoh2",
+  "name": "Web Threat Demo (Compose) - Webhook -> Score -> Respond",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "web-ingest",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -144
+      ],
+      "id": "457d2d0c-adcb-4027-b5c7-c918a85f1cfb",
+      "name": "Webhook",
+      "webhookId": "0d1e7b31-74af-417d-b122-707abedb5eb8"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-alert-decision",
+              "leftValue": "={{$json.body.score?.decision || $json.score?.decision || \"\"}}",
+              "rightValue": "ALERT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "c2c3922b-c8ca-4c67-952f-48a1e9a57929",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID || '<set TELEGRAM_CHAT_ID>'}}",
+        "text": "={{`[ALERT]\n  stage: ${$json.body.score.stage}\n  confidence: ${$json.body.score.confidence}\n  severity: ${$json.body.score.severity}\n  src_ip: ${$json.body.flow_meta.src_ip}\n  dest_ip: ${$json.body.flow_meta.dest_ip}\n  path: ${$json.body.flow_meta.path}\n  status: ${$json.body.flow_meta.status}`}}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        -176
+      ],
+      "id": "1dd1ff80-f046-4ca2-9014-5d6838cf4dc1",
+      "name": "Telegram",
+      "webhookId": "d20a4775-d3f0-4316-8ea3-bcb6d431b13a"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID_2 || $env.TELEGRAM_CHAT_ID || '<set TELEGRAM_CHAT_ID>'}}",
+        "text": "={{`[ ALERT]  stage: ${$json.body.score.stage}  confidence: ${$json.body.score.confidence}  severity: ${$json.body.score.severity}  src_ip: ${$json.body.flow_meta.src_ip}  dest_ip: ${$json.body.flow_meta.dest_ip}  path: ${$json.body.flow_meta.path}  status: ${$json.body.flow_meta.status}`}}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        -32
+      ],
+      "id": "78437fc6-4280-4cf6-a85a-8c4ea4ff2662",
+      "name": "Send a text message1",
+      "webhookId": "1bf6d373-a4f8-4c64-a9e2-8d20b2742f77"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {},
+  "pinData": {},
+  "versionId": "3d5d22c6-138f-4082-b852-3b9111352e5a",
+  "activeVersionId": "3d5d22c6-138f-4082-b852-3b9111352e5a",
+  "versionCounter": 34,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": []
+}

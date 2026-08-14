@@ -1,0 +1,52 @@
+@startuml
+title Deployment - Web Threat Early Warning
+
+skinparam shadowing false
+
+node "Host Ubuntu" {
+  node "systemd" {
+    artifact "web_early_warning_scoring.service" as s1
+    artifact "web_early_warning_web_log_parser.service" as s2
+    artifact "web_early_warning_web_collector.service" as s3
+  }
+
+  folder "/etc" {
+    file "web_early_warning_scoring.env" as e1
+    file "web_early_warning_web_log_parser.env" as e2
+    file "web_early_warning_web_collector.env" as e3
+  }
+
+  folder "<repo>/web_early_warning" {
+    component "inference_service.py"
+    component "web_accesslog_to_events.py"
+    component "web_events_to_n8n.py"
+    file "model_out_flowfeatures/lgbm_unified_web_60_v1.joblib" as m
+  }
+
+  folder "<repo>/security-demo-lab/logs" {
+    file "nginx/access.log" as accesslog
+    file "web/events.jsonl" as events
+    database "web/alerts.db" as alerts
+  }
+
+  node "Docker Compose" {
+    node "juice-shop-nginx" as dnginx
+    node "juice-shop-demo" as dweb
+    node "n8n" as dn8n
+  }
+}
+
+s1 --> e1
+s2 --> e2
+s3 --> e3
+
+s1 --> m
+s2 --> accesslog
+s2 --> events
+s3 --> events
+s3 --> alerts
+s3 --> dn8n : webhook web-ingest
+
+K6 --> dnginx
+dnginx --> dweb
+@enduml
