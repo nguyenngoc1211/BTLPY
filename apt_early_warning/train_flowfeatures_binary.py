@@ -9,10 +9,12 @@ import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 
-from apt_early_warning.feature_pipeline import (
+from web_early_warning.feature_pipeline import (
+    CANONICAL_ALIASES,
     FEATURE_PROFILES,
-    normalize_label_binary_apt,
+    normalize_label_binary_attack,
     transform_features,
 )
 
@@ -20,9 +22,10 @@ from apt_early_warning.feature_pipeline import (
 def build_model() -> LGBMClassifier:
     return LGBMClassifier(
         objective="binary",
-        n_estimators=800,
+        n_estimators=400,
         learning_rate=0.05,
-        num_leaves=63,
+        num_leaves=31,
+        min_child_samples=100,
         subsample=0.9,
         colsample_bytree=0.9,
         reg_lambda=1.0,
@@ -41,7 +44,7 @@ def main() -> int:
     )
     ap.add_argument(
         "--out",
-        default="apt_early_warning/model_out_flowfeatures/lgbm_flowfeatures_binary.joblib",
+        default="web_early_warning/model_out_flowfeatures/lgbm_flowfeatures_binary.joblib",
         help="Output bundle path.",
     )
     ap.add_argument("--test-size", type=float, default=0.2)
@@ -52,6 +55,12 @@ def main() -> int:
         help="Feature profile used for training/inference compatibility.",
     )
     ap.add_argument(
+        "--split-mode",
+        choices=["random_stratified", "srcip_group"],
+        default="random_stratified",
+        help="Train/test split strategy. srcip_group is stricter for anti-leakage.",
+    )
+    ap.add_argument(
         "--sample-frac",
         type=float,
         default=1.0,
@@ -59,11 +68,22 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    # Load full CSV so aliases can be resolved flexibly from different column naming variants.
-    df = pd.read_csv(args.csv, low_memory=False)
+    # Read only columns needed by the selected feature profile to reduce RAM pressure.
+    needed = set(FEATURE_PROFILES.get(args.feature_profile, []))
+    needed.add("Label")
+    if args.split_mode == "srcip_group":
+        needed.add("SrcIP")
+    for aliases in CANONICAL_ALIASES.values():
+        for col in aliases:
+            needed.add(col)
+    df = pd.read_csv(
+        args.csv,
+        low_memory=False,
+        usecols=lambda c: c in needed,
+    )
     if "Label" not in df.columns:
         raise ValueError("Missing Label column in CSV.")
-    df["Label"] = df["Label"].map(normalize_label_binary_apt)
+    df["Label"] = df["Label"].map(normalize_label_binary_attack)
     df = df.dropna(subset=["Label"])
 
     if args.sample_frac <= 0 or args.sample_frac > 1:
@@ -71,21 +91,30 @@ def main() -> int:
     if args.sample_frac < 1.0:
         df = df.sample(frac=args.sample_frac, random_state=1337)
 
-    X = transform_features(df, args.feature_profile)
+    X = transform_features(df, args.feature_profile).astype("float32")
     y = df["Label"].astype(str)
 
-    label_order = ["Benign", "APT"]
+    label_order = ["Benign", "WebAttack"]
     label_to_id = {name: i for i, name in enumerate(label_order)}
     id_to_label = {i: name for i, name in enumerate(label_order)}
     y_id = y.map(label_to_id)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y_id,
-        test_size=args.test_size,
-        random_state=1337,
-        stratify=y_id,
-    )
+    if args.split_mode == "srcip_group":
+        if "SrcIP" not in df.columns:
+            raise ValueError("SrcIP column is required for --split-mode srcip_group")
+        groups = df["SrcIP"].astype(str).fillna("")
+        gss = GroupShuffleSplit(n_splits=1, test_size=args.test_size, random_state=1337)
+        train_idx, test_idx = next(gss.split(X, y_id, groups=groups))
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y_id.iloc[train_idx], y_id.iloc[test_idx]
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y_id,
+            test_size=args.test_size,
+            random_state=1337,
+            stratify=y_id,
+        )
 
     model = build_model()
     model.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric="binary_logloss")
@@ -101,12 +130,13 @@ def main() -> int:
         "label_names": id_to_label,
         "meta": {
             "dataset": "flowFeatures.csv",
-            "task": "binary_benign_vs_apt",
+            "task": "binary_benign_vs_web_attack",
             "n_rows": int(df.shape[0]),
             "n_train": int(X_train.shape[0]),
             "n_test": int(X_test.shape[0]),
             "features": list(X.columns),
             "feature_profile": args.feature_profile,
+            "split_mode": args.split_mode,
             "label_order": label_order,
             "source_columns": list(df.columns),
         },
