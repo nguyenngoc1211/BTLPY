@@ -1,0 +1,31 @@
+@startuml
+title Sequence - Mot event tu log den Telegram
+
+actor K6
+participant "Nginx" as nginx
+participant "Parser\nweb_accesslog_to_events" as parser
+participant "events.jsonl" as events
+participant "Collector\nweb_events_to_n8n" as collector
+participant "Scoring API\n/score" as scoring
+participant "Model\nlgbm_unified_web_60_v1" as model
+database "alerts.db" as db
+participant "n8n\n/webhook/web-ingest" as n8n
+participant "Telegram" as tg
+
+K6 -> nginx : HTTP suspicious request
+nginx -> parser : write access.log line
+parser -> events : emit JSON event
+collector -> events : tail next event
+collector -> scoring : POST /score(features, flow_meta)
+scoring -> model : predict_proba()
+model --> scoring : class probabilities
+scoring --> collector : decision=ALERT/NO_ALERT
+
+alt decision == ALERT
+  collector -> db : insert alert row
+  collector -> n8n : POST alert payload
+  n8n -> tg : send alert message
+else decision == NO_ALERT
+  collector -> collector : skip n8n forwarding
+end
+@enduml

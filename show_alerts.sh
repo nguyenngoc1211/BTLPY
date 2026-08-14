@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_PATH="${1:-/home/sealorl/BTLPY/security-demo-lab/logs/apt/alerts.db}"
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${1:-$ROOT_DIR/security-demo-lab/logs/web/alerts.db}"
 LIMIT="${2:-20}"
 
 if [[ ! -f "$DB_PATH" ]]; then

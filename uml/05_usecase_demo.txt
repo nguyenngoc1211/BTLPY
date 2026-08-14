@@ -1,0 +1,27 @@
+@startuml
+title Use Case - Demo canh bao tan cong web
+
+left to right direction
+actor "Sinh vien" as student
+actor "Giang vien" as lecturer
+actor "Attacker Simulator (k6)" as k6
+
+rectangle "Web Threat Early Warning System" {
+  usecase "Khoi dong lab Docker" as UC1
+  usecase "Khoi dong 3 service systemd" as UC2
+  usecase "Sinh luu luong nghi ngo" as UC3
+  usecase "Cham diem ML /score" as UC4
+  usecase "Luu lich su alert SQLite" as UC5
+  usecase "Gui canh bao Telegram" as UC6
+  usecase "Xem health va alerts" as UC7
+}
+
+student --> UC1
+student --> UC2
+k6 --> UC3
+UC3 --> UC4
+UC4 --> UC5
+UC4 --> UC6
+student --> UC7
+lecturer --> UC7
+@enduml

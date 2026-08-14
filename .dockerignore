@@ -1,0 +1,22 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.git/
+.DS_Store
+
+# Large datasets/logs not needed for demo image builds
+flowFeatures.csv
+*.csv:Zone.Identifier
+security-demo-lab/logs/
+web_early_warning/model_out_flowfeatures/*.joblib
+web_early_warning/model_out_flowfeatures/error_analysis_*.csv
+web_early_warning/model_out_flowfeatures/threshold_tradeoff_*.csv
+*.db
+*.jsonl

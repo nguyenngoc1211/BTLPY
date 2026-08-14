@@ -1,0 +1,21 @@
+@startuml
+title Activity - Train model unified 60 features
+
+start
+:Load flowFeatures.csv;
+:Normalize labels\n(Benign/WebAttack);
+:Sample flow dataset\n(flow-sample-frac);
+
+:Load security-demo-lab/logs/web/events.jsonl;
+:Build web labels from behavior markers\n(force_alert, UA/path/status);
+:Rebalance web benign/attack\n(max-benign-ratio-web);
+:Repeat web rows\n(web-repeat);
+
+:Concatenate flow + web events;
+:Transform features\nprofile web_monitor_60_v1;
+:Split train/test (stratified);
+:Train LightGBM binary classifier;
+:Evaluate (AUC, Precision, Recall, F1);
+:Export bundle (.joblib)\n+ feature_names + label_names + meta;
+stop
+@enduml

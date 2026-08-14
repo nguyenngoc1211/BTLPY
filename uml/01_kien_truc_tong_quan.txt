@@ -1,0 +1,45 @@
+@startuml
+title Web Threat Early Warning - Tong quan kien truc
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor User
+actor "Attacker Simulator (k6)" as K6
+
+node "Security Demo Lab (Docker)" {
+  component "Nginx" as nginx
+  component "Juice Shop Web App" as webapp
+}
+
+node "Host checkout / deployment directory" {
+  component "web_accesslog_to_events.py\n(web_early_warning)" as parser
+  database "events.jsonl\nsecurity-demo-lab/logs/web/events.jsonl" as events
+
+  component "web_events_to_n8n.py\nCollector" as collector
+  component "FastAPI Scoring Service\n/health /score /alerts" as scoring
+  database "alerts.db\nsecurity-demo-lab/logs/web/alerts.db" as alertsdb
+
+  component "LightGBM Bundle\nlgbm_unified_web_60_v1.joblib\n(60 features)" as model
+}
+
+node "n8n (localhost:5678)" {
+  component "Workflow Webhook\n/webhook/web-ingest" as n8nwebhook
+  component "Telegram Node" as telegram
+}
+
+User --> nginx : normal web requests
+K6 --> nginx : suspicious traffic
+nginx --> webapp : reverse proxy
+nginx --> parser : access.log (tail)
+
+parser --> events : append JSONL events
+collector --> events : read stream
+collector --> scoring : POST /score
+scoring --> model : load + infer
+scoring --> collector : stage/confidence/decision
+collector --> alertsdb : persist ALERT
+collector --> n8nwebhook : POST alert payload
+n8nwebhook --> telegram : notify
+@enduml

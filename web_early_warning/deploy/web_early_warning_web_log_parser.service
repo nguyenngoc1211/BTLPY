@@ -1,0 +1,21 @@
+[Unit]
+Description=Web Threat Early Warning - Access Log to JSONL Event Parser
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/web_early_warning_web_log_parser.env
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=__ROOT_DIR__
+
+User=__SERVICE_USER__
+Group=__SERVICE_GROUP__
+
+ExecStart=__ROOT_DIR__/.venv/bin/python3 -m web_early_warning.web_accesslog_to_events
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

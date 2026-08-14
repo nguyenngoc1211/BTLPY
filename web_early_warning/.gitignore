@@ -1,0 +1,6 @@
+model_out_flowfeatures/*.joblib
+model_out_flowfeatures/error_analysis_*.csv
+model_out_flowfeatures/threshold_tradeoff_*.csv
+*.joblib
+__pycache__/
+.venv/
