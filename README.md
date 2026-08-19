@@ -4,7 +4,7 @@ Machine-learning pipeline for early warning of suspicious web traffic from Nginx
 
 ## Highlights
 
-- Parses Nginx/Apache combined logs or JSON access logs into windowed web-flow events.
+- Parses Nginx/Apache combined logs or JSON access logs into windowed web-flow events   .
 - Scores events through a FastAPI inference API with configurable alert policy.
 - Persists alerts to SQLite and can forward only actionable alerts to an n8n webhook.
 - Includes Docker lab assets for safe local testing with OWASP Juice Shop.
